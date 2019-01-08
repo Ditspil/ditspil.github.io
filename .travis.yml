@@ -21,5 +21,7 @@ before_script:
 
 script:
   - docker run --rm -v ${PWD}:/tmp -w /tmp localgod/ditspilbuild:latest firebase --version
+  - docker run --rm -v ${PWD}:/tmp -w /tmp localgod/ditspilbuild:latest npm run build
+  - docker run --rm -v ${PWD}:/tmp -w /tmp localgod/ditspilbuild:latest firebase deploy --token "${FIREBASE_TOKEN}"
 
 after_success:
