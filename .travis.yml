@@ -1,0 +1,25 @@
+sudo: required
+
+services:
+  - docker
+
+dist: xenial
+addons:
+  apt:
+    packages:
+    - docker
+
+env:
+
+os:
+  - linux
+
+before_install:
+
+before_script:
+  - docker pull localgod/ditspilbuild:latest
+
+script:
+  - docker run --rm -v ${PWD}:/tmp -w /tmp localgod/ditspilbuild:latest firebase --version
+
+after_success:
