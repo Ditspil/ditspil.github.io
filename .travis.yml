@@ -11,6 +11,8 @@ addons:
 
 env:
 
+cache: npm
+
 os:
   - linux
 
@@ -21,6 +23,7 @@ before_script:
 
 script:
   - docker run --rm -v ${PWD}:/tmp -w /tmp localgod/ditspilbuild:latest firebase --version
+  - docker run --rm -v ${PWD}:/tmp -w /tmp localgod/ditspilbuild:latest npm install
   - docker run --rm -v ${PWD}:/tmp -w /tmp localgod/ditspilbuild:latest npm run build
   - if [ "$TRAVIS_BRANCH" = "master" ]; then docker run --rm -v ${PWD}:/tmp -w /tmp localgod/ditspilbuild:latest firebase deploy --token "${FIREBASE_TOKEN}"; fi
 
