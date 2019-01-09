@@ -4,7 +4,7 @@ BUILD_IMAGE=localgod/ditspilbuild:latest
 
 # Start docker image for development
 server_start:
-	@docker run --rm -dt --name ditspil_dev_server -v ${PWD}:/tmp -w /tmp -p 80:8080 ${BUILD_IMAGE} npm run serve
+	@docker run --rm -dt --name ditspil_dev_server -v ${PWD}:/tmp -w /tmp -p 80:8080 -p 8000:8000 ${BUILD_IMAGE} npm run serve
 
 # Run shell on dev server
 server_shell:
