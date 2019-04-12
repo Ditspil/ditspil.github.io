@@ -1,0 +1,20 @@
+version: '3.4'
+services:
+  devserver:
+    container_name: ditspil_dev_server
+    image: localgod/ditspilbuild:latest
+    command: ["npm", "run", "serve"]
+    working_dir: /tmp/services/frontend/
+    ports:
+      - "80:80"
+      - "8000:8000"
+    volumes:
+        - type: bind
+          source: ./
+          target: /tmp
+    networks:
+      - ditspil
+
+networks:
+  ditspil:
+    driver: bridge

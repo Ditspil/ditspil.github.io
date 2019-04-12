@@ -22,6 +22,7 @@ before_script:
   - docker pull localgod/ditspilbuild:latest
 
 script:
+  - cd services/frontend
   - docker run --rm -v ${PWD}:/tmp -w /tmp localgod/ditspilbuild:latest firebase --version
   - docker run --rm -v ${PWD}:/tmp -w /tmp localgod/ditspilbuild:latest npm install
   - docker run --rm -v ${PWD}:/tmp -w /tmp localgod/ditspilbuild:latest npm run build

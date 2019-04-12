@@ -10,4 +10,5 @@ RUN unzip pup_v0.4.0_linux_amd64.zip && \
     rm pup_v0.4.0_linux_amd64.zip && \
     mv /jq-linux64 /usr/bin/jq && \
     chmod 755 /usr/bin/jq && \
+    npm update -g npm && \
     npm install -g firebase-tools @vue/cli
