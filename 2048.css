@@ -1,0 +1,207 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #faf8ef;
+  font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+  color: #776e65;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  user-select: none;
+}
+
+header {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+h1 {
+  font-size: 72px;
+  font-weight: 800;
+  color: #776e65;
+  line-height: 1;
+}
+
+.scores {
+  display: flex;
+  gap: 8px;
+}
+
+.score-box {
+  background: #bbada0;
+  border-radius: 6px;
+  padding: 8px 16px;
+  text-align: center;
+  min-width: 64px;
+}
+
+.score-box .label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #eee4da;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.score-box .value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.controls {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+button {
+  background: #8f7a66;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+button:hover { background: #7a6856; }
+
+/* Board */
+.board-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+}
+
+.board {
+  background: #bbada0;
+  border-radius: 10px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  aspect-ratio: 1;
+  width: 100%;
+}
+
+.cell {
+  background: rgba(238, 228, 218, 0.35);
+  border-radius: 6px;
+}
+
+/* Overlay (win / game-over) */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(238, 228, 218, 0.73);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+  z-index: 100;
+}
+
+.overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.overlay .message {
+  font-size: 48px;
+  font-weight: 800;
+}
+
+.overlay.win .message  { color: #f9f6f2; }
+.overlay.lose .message { color: #776e65; }
+
+/* Tiles */
+.tile-container {
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+}
+
+.tile {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  border-radius: 6px;
+  transition: left 0.18s ease, top 0.18s ease;
+  will-change: left, top;
+}
+
+.tile.new     { animation: pop-in  0.22s ease forwards; }
+.tile.merged  { animation: pop-out 0.20s ease forwards; }
+
+@keyframes pop-in {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+@keyframes pop-out {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Tile colours */
+.tile[data-val="2"]    { background:#eee4da; color:#776e65; }
+.tile[data-val="4"]    { background:#ede0c8; color:#776e65; }
+.tile[data-val="8"]    { background:#f2b179; color:#f9f6f2; }
+.tile[data-val="16"]   { background:#f59563; color:#f9f6f2; }
+.tile[data-val="32"]   { background:#f67c5f; color:#f9f6f2; }
+.tile[data-val="64"]   { background:#f65e3b; color:#f9f6f2; }
+.tile[data-val="128"]  { background:#edcf72; color:#f9f6f2; box-shadow:0 0 24px rgba(243,215,116,.6); }
+.tile[data-val="256"]  { background:#edcc61; color:#f9f6f2; box-shadow:0 0 28px rgba(243,215,116,.7); }
+.tile[data-val="512"]  { background:#edc850; color:#f9f6f2; box-shadow:0 0 32px rgba(243,215,116,.8); }
+.tile[data-val="1024"] { background:#edc53f; color:#f9f6f2; box-shadow:0 0 36px rgba(243,215,116,.9); }
+.tile[data-val="2048"] { background:#edc22e; color:#f9f6f2; box-shadow:0 0 40px rgba(243,215,116,1  ); }
+.tile[data-val="super"]{ background:#3c3a32; color:#f9f6f2; }
+
+.hint {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #bbada0;
+  text-align: center;
+}
+
+footer {
+  margin-top: 24px;
+  font-size: 12px;
+  color: #bbada0;
+  text-align: center;
+}
+
+footer a {
+  color: #8f7a66;
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}

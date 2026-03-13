@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2048</title>
+  <link rel="stylesheet" href="2048.css" />
+</head>
+<body>
+
+<header>
+  <h1>2048</h1>
+  <div class="scores">
+    <div class="score-box">
+      <div class="label">Score</div>
+      <div class="value" id="score">0</div>
+    </div>
+    <div class="score-box">
+      <div class="label">Best</div>
+      <div class="value" id="best">0</div>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <span class="subtitle">Join tiles to get <strong>2048!</strong></span>
+  <button id="btn-new">New Game</button>
+</div>
+
+<div class="board-wrapper">
+  <!-- static background cells -->
+  <div class="board" id="board">
+    <div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div>
+  </div>
+
+  <!-- absolute-positioned tiles rendered here -->
+  <div class="tile-container" id="tile-container"></div>
+
+  <!-- overlays -->
+  <div class="overlay win"  id="overlay-win">
+    <div class="message">You win! 🎉</div>
+    <button id="btn-keep">Keep going</button>
+    <button id="btn-new2">New Game</button>
+  </div>
+  <div class="overlay lose" id="overlay-lose">
+    <div class="message">Game over!</div>
+    <button id="btn-new3">Try again</button>
+  </div>
+</div>
+
+<p class="hint">Use arrow keys, WASD, or swipe to move tiles.</p>
+
+<footer>
+  <p>Reimplementation of 2048, originally created by <a href="https://gabrielecirulli.com" target="_blank" rel="noopener">Gabriele Cirulli</a> in 2014.</p>
+</footer>
+
+<script src="2048.js"></script>
+</body>
+</html>
