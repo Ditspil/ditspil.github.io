@@ -54,12 +54,6 @@
   }
 
   /* ── rendering ── */
-  let tileEls = [];   // parallel structure to grid: tileEls[r][c] = DOM element | null
-
-  function initTileEls() {
-    tileEls = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
-  }
-
   function renderTile(r, c, val, isNew = false, isMerged = false) {
     const ts  = tileSize();
     const el  = document.createElement('div');
@@ -79,15 +73,17 @@
 
   function fullRender() {
     container.innerHTML = '';
-    initTileEls();
     for (let r = 0; r < SIZE; r++)
       for (let c = 0; c < SIZE; c++)
         if (grid[r][c])
-          tileEls[r][c] = renderTile(r, c, grid[r][c]);
+          renderTile(r, c, grid[r][c]);
   }
 
   /* ── move logic ── */
-  // Rotate grid 90° clockwise so we only need one "slide left" implementation
+  // Rotate grid 90° clockwise so we only need one "slide left" implementation.
+  // Applying the same rotation to a coordinate grid lets us map any cell in the
+  // rotated line back to its real board position, so movement/merge sources are
+  // known exactly instead of being reverse-engineered from a before/after diff.
   function rotateGrid(g) {
     const n = [];
     for (let c = 0; c < SIZE; c++) {
@@ -97,68 +93,98 @@
     return n;
   }
 
-  function slideRow(row) {
-    let vals = row.filter(v => v);
-    let merged = [];
-    let gained = 0;
-    for (let i = 0; i < vals.length; i++) {
-      if (i + 1 < vals.length && vals[i] === vals[i + 1]) {
-        const m = vals[i] * 2;
-        merged.push(m);
-        gained += m;
-        i++;
-      } else {
-        merged.push(vals[i]);
-      }
+  function identityCoordGrid() {
+    const cg = [];
+    for (let r = 0; r < SIZE; r++) {
+      cg[r] = [];
+      for (let c = 0; c < SIZE; c++) cg[r][c] = [r, c];
     }
-    while (merged.length < SIZE) merged.push(0);
-    return { merged, gained };
+    return cg;
   }
 
-  function slideLeft(g) {
-    let changed = false, gained = 0;
-    const newG = emptyGrid();
-    for (let r = 0; r < SIZE; r++) {
-      const { merged, gained: g2 } = slideRow(g[r]);
-      newG[r] = merged;
-      gained += g2;
-      if (merged.some((v, i) => v !== g[r][i])) changed = true;
+  // Slides one line (row in the rotated grid) to the left, returning the
+  // resulting values plus an event per surviving tile describing where it
+  // came from (as index positions within this line).
+  function slideLine(line) {
+    const tiles = [];
+    for (let i = 0; i < line.length; i++)
+      if (line[i]) tiles.push({ value: line[i], fromIndex: i });
+
+    const result = Array(SIZE).fill(0);
+    const events = [];
+    let gained = 0, toIndex = 0;
+
+    for (let i = 0; i < tiles.length; i++) {
+      const cur = tiles[i], next = tiles[i + 1];
+      if (next && next.value === cur.value) {
+        const newValue = cur.value * 2;
+        events.push({ type: 'merge', value: cur.value, newValue, fromIndexes: [cur.fromIndex, next.fromIndex], toIndex });
+        result[toIndex] = newValue;
+        gained += newValue;
+        toIndex++;
+        i++;
+      } else {
+        events.push({ type: 'move', value: cur.value, fromIndex: cur.fromIndex, toIndex });
+        result[toIndex] = cur.value;
+        toIndex++;
+      }
     }
-    return { newG, changed, gained };
+    return { result, events, gained };
   }
 
   function move(direction) {
     // 0=left, 1=up, 2=right, 3=down
-    let g = grid;
-    const applyRots = (n) => { for (let i = 0; i < n; i++) g = rotateGrid(g); };
+    let g = grid, cg = identityCoordGrid();
+    for (let i = 0; i < direction; i++) { g = rotateGrid(g); cg = rotateGrid(cg); }
 
-    applyRots(direction);
-    const { newG, changed, gained } = slideLeft(g);
-    if (!changed) {
-      applyRots((4 - direction) % 4);
-      return false;
+    let changed = false, gained = 0;
+    const newGrid = emptyGrid();
+    const animEvents = [];
+
+    for (let line = 0; line < SIZE; line++) {
+      const { result, events, gained: g2 } = slideLine(g[line]);
+      gained += g2;
+
+      for (let pos = 0; pos < SIZE; pos++) {
+        const [r, c] = cg[line][pos];
+        newGrid[r][c] = result[pos];
+      }
+
+      for (const ev of events) {
+        if (ev.type === 'move') {
+          const [fr, fc] = cg[line][ev.fromIndex];
+          const [tr, tc] = cg[line][ev.toIndex];
+          if (fr !== tr || fc !== tc) changed = true;
+          animEvents.push({ type: 'move', value: ev.value, fromR: fr, fromC: fc, toR: tr, toC: tc });
+        } else {
+          changed = true;
+          const [fr1, fc1] = cg[line][ev.fromIndexes[0]];
+          const [fr2, fc2] = cg[line][ev.fromIndexes[1]];
+          const [tr, tc]   = cg[line][ev.toIndex];
+          animEvents.push({ type: 'merge', value: ev.value, newValue: ev.newValue, from: [[fr1, fc1], [fr2, fc2]], toR: tr, toC: tc });
+        }
+      }
     }
-    g = newG;
-    applyRots((4 - direction) % 4);
-    grid = g;
+
+    if (!changed) return { moved: false };
+
+    grid = newGrid;
     score += gained;
     if (score > best) { best = score; localStorage.setItem('2048-best', best); }
     updateScoreUI();
-    return true;
+    return { moved: true, events: animEvents };
   }
 
   /* ── animated move ── */
+  const SLIDE_MS = 180; // must match .tile transition duration in 2048.css
+
   function animatedMove(direction) {
     if (over || won) return;
 
-    const before = grid.map(r => [...r]);
-    const moved = move(direction);
-    if (!moved) return;
+    const result = move(direction);
+    if (!result.moved) return;
 
-    container.innerHTML = '';
-    initTileEls();
-
-    renderMoveAnimation(before, grid);
+    renderMoveAnimation(result.events);
 
     setTimeout(() => {
       spawnTile();
@@ -166,62 +192,31 @@
     }, 200);
   }
 
-  function renderMoveAnimation(before, after) {
-    const used = Array.from({ length: SIZE }, () => Array(SIZE).fill(false));
-
-    for (let r = 0; r < SIZE; r++) {
-      for (let c = 0; c < SIZE; c++) {
-        if (!after[r][c]) continue;
-        const val = after[r][c];
-        let src1 = null, src2 = null;
-
-        outer:
-        for (let br = 0; br < SIZE; br++) {
-          for (let bc = 0; bc < SIZE; bc++) {
-            if (!used[br][bc] && before[br][bc] === val / 2) {
-              for (let br2 = 0; br2 < SIZE; br2++) {
-                for (let bc2 = 0; bc2 < SIZE; bc2++) {
-                  if ((br2 !== br || bc2 !== bc) && !used[br2][bc2] && before[br2][bc2] === val / 2) {
-                    if (!beforeHas(before, val) && val > 2) {
-                      src1 = [br, bc]; src2 = [br2, bc2];
-                      used[br][bc] = true; used[br2][bc2] = true;
-                      break outer;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        if (!src1) {
-          outer2:
-          for (let br = 0; br < SIZE; br++) {
-            for (let bc = 0; bc < SIZE; bc++) {
-              if (!used[br][bc] && before[br][bc] === val) {
-                src1 = [br, bc];
-                used[br][bc] = true;
-                break outer2;
-              }
-            }
-          }
-        }
-
-        if (src1) {
-          const el = renderTile(src1[0], src1[1], val, false, !!src2);
-          requestAnimationFrame(() => {
-            el.style.top  = tilePos(r) + 'px';
-            el.style.left = tilePos(c) + 'px';
-          });
-        } else {
-          renderTile(r, c, val);
-        }
-      }
-    }
+  // Creates a tile at the source cell, then forces a layout flush before
+  // moving it to the destination so the browser reliably picks up the
+  // left/top transition instead of occasionally snapping straight there.
+  function slideTileEl(fromR, fromC, toR, toC, value) {
+    const el = renderTile(fromR, fromC, value);
+    void el.offsetWidth;
+    el.style.top  = tilePos(toR) + 'px';
+    el.style.left = tilePos(toC) + 'px';
+    return el;
   }
 
-  function beforeHas(b, v) {
-    return b.some(row => row.includes(v));
+  function renderMoveAnimation(events) {
+    container.innerHTML = '';
+
+    for (const ev of events) {
+      if (ev.type === 'move') {
+        slideTileEl(ev.fromR, ev.fromC, ev.toR, ev.toC, ev.value);
+      } else {
+        const els = ev.from.map(([fr, fc]) => slideTileEl(fr, fc, ev.toR, ev.toC, ev.value));
+        setTimeout(() => {
+          els.forEach(el => el.remove());
+          renderTile(ev.toR, ev.toC, ev.newValue, false, true);
+        }, SLIDE_MS);
+      }
+    }
   }
 
   /* ── state checks ── */
@@ -258,7 +253,6 @@
     overlayLose.classList.remove('visible');
     updateScoreUI();
     container.innerHTML = '';
-    initTileEls();
     spawnTile();
     spawnTile();
     checkState();
